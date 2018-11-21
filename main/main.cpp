@@ -133,6 +133,18 @@ static void UpdateDisplay()
     ili9341_write_frame_rectangleLE(0, 0, 320, 240, fb);
 }
 
+
+status void writeScreen(uint8_t* ScreenData)
+{
+    UG_WindowSetTitleText(&window1, screenData);
+    UG_WindowSetTitleTextFont(&window1, &FONT_10X16);
+    UG_WindowSetTitleTextAlignment(&window1, ALIGN_CENTER);
+
+    UG_WindowShow(&window1);
+    UpdateDisplay();
+}
+
+
 #define MAX_OBJECTS 20
 #define ITEM_COUNT  10
 #define TRUE 1
@@ -145,6 +157,7 @@ UG_OBJECT objbuffwnd1[MAX_OBJECTS];
 
 void sigdroid_init()
 {
+    chuint8_t str[80];
     float frequency = 1000;
     bool playsound = FALSE;
     printf("%s: HEAP:0x%x (%#08x)\n",
@@ -162,12 +175,8 @@ void sigdroid_init()
 
     UG_WindowCreate(&window1, objbuffwnd1, MAX_OBJECTS, window1callback);
 
-    UG_WindowSetTitleText(&window1, "sigDroid-go");
-    UG_WindowSetTitleTextFont(&window1, &FONT_10X16);
-    UG_WindowSetTitleTextAlignment(&window1, ALIGN_CENTER);
-
-    UG_WindowShow(&window1);
-    UpdateDisplay();
+    sprintf(str, "sigDroid-go Ready");
+    writeScreen(str);
 
     odroid_gamepad_state previousState;
     odroid_input_gamepad_read(&previousState);
@@ -198,35 +207,40 @@ void sigdroid_init()
        }else if (state.values[ODROID_INPUT_UP])
        {
             frequency = frequency + 10;
+            sprintf(str, "sigDroid-go: %fHz", frequency);
+            writeScreen(str);
        }else if (state.values[ODROID_INPUT_DOWN])
        {
             frequency = frequency - 10;
+            sprintf(str, "sigDroid-go: %fHz", frequency);
+            writeScreen(str);
        }else if (state.values[ODROID_INPUT_LEFT])
        {
             frequency = frequency - 100;
+            sprintf(str, "sigDroid-go: %fHz", frequency);
+            writeScreen(str);            
        }else if (state.values[ODROID_INPUT_RIGHT])
        {
-            frequency = frequency + 100;                                    
+            frequency = frequency + 100;
+            sprintf(str, "sigDroid-go: %fHz", frequency);
+            writeScreen(str);                                    
        }else if (!previousState.values[ODROID_INPUT_VOLUME] && state.values[ODROID_INPUT_VOLUME])
        {
+          uninitSound();
           odroid_audio_terminate();
           if (AudioSink == ODROID_AUDIO_SINK_DAC){
-            AudioSink = ODROID_AUDIO_SINK_SPEAKER;
-            odroid_audio_init(ODROID_AUDIO_SINK_SPEAKER, AUDIO_SAMPLE_RATE);
+              AudioSink = ODROID_AUDIO_SINK_SPEAKER;
+              odroid_audio_init(ODROID_AUDIO_SINK_SPEAKER, AUDIO_SAMPLE_RATE);
           }else if (AudioSink == ODROID_AUDIO_SINK_SPEAKER){
-            AudioSink = ODROID_AUDIO_SINK_DAC;
-            odroid_audio_init(ODROID_AUDIO_SINK_DAC, AUDIO_SAMPLE_RATE);
+              AudioSink = ODROID_AUDIO_SINK_DAC;
+              odroid_audio_init(ODROID_AUDIO_SINK_DAC, AUDIO_SAMPLE_RATE);
           }
-          odroid_audio_volume_set(ODROID_VOLUME_LEVEL0);
+          initSound();
+          
        }
 
        previousState = state;
     }
-
-}
-
-void sigdroid_step(odroid_gamepad_state* gamepad)
-{
 
 }
 
