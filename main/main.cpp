@@ -88,32 +88,12 @@ void initSound()
 
 void uninitSound()
 {
+  short outbuf[2];
   odroid_audio_volume_set(ODROID_VOLUME_LEVEL0);
+  outbuf[0] = 0x00;
+  outbuf[1] = 0x00;
+  odroid_audio_submit(outbuf, 1);
 }
-
-void videoTask(void *arg)
-{
-    while(1)
-    {
-        uint8_t* param;
-        xQueuePeek(vidQueue, &param, portMAX_DELAY);
-        memcpy(framebuffer, param, sizeof(framebuffer));
-        xQueueReceive(vidQueue, &param, portMAX_DELAY);
-
-    }
-
-    odroid_display_lock_sms_display();
-
-    // Draw hourglass
-    odroid_display_show_hourglass();
-
-    odroid_display_unlock_sms_display();
-
-    vTaskDelete(NULL);
-
-    while (1) {}
-}
-
 
 UG_GUI gui;
 uint16_t* fb;
@@ -133,18 +113,6 @@ static void UpdateDisplay()
     ili9341_write_frame_rectangleLE(0, 0, 320, 240, fb);
 }
 
-
-status void writeScreen(uint8_t* ScreenData)
-{
-    UG_WindowSetTitleText(&window1, screenData);
-    UG_WindowSetTitleTextFont(&window1, &FONT_10X16);
-    UG_WindowSetTitleTextAlignment(&window1, ALIGN_CENTER);
-
-    UG_WindowShow(&window1);
-    UpdateDisplay();
-}
-
-
 #define MAX_OBJECTS 20
 #define ITEM_COUNT  10
 #define TRUE 1
@@ -155,9 +123,19 @@ UG_BUTTON button1;
 UG_TEXTBOX textbox[ITEM_COUNT];
 UG_OBJECT objbuffwnd1[MAX_OBJECTS];
 
+static void writeScreen(char* ScreenData)
+{
+    UG_WindowSetTitleText(&window1, ScreenData);
+    UG_WindowSetTitleTextFont(&window1, &FONT_10X16);
+    UG_WindowSetTitleTextAlignment(&window1, ALIGN_CENTER);
+
+    UG_WindowShow(&window1);
+    UpdateDisplay();
+}
+
 void sigdroid_init()
 {
-    chuint8_t str[80];
+    char outString[80];
     float frequency = 1000;
     bool playsound = FALSE;
     printf("%s: HEAP:0x%x (%#08x)\n",
@@ -175,8 +153,8 @@ void sigdroid_init()
 
     UG_WindowCreate(&window1, objbuffwnd1, MAX_OBJECTS, window1callback);
 
-    sprintf(str, "sigDroid-go Ready");
-    writeScreen(str);
+    sprintf(outString, "sigDroid-go Ready");
+    writeScreen(outString);
 
     odroid_gamepad_state previousState;
     odroid_input_gamepad_read(&previousState);
@@ -207,23 +185,23 @@ void sigdroid_init()
        }else if (state.values[ODROID_INPUT_UP])
        {
             frequency = frequency + 10;
-            sprintf(str, "sigDroid-go: %fHz", frequency);
-            writeScreen(str);
+            sprintf(outString, "sigDroid-go: %lfHz", frequency);
+            writeScreen(outString);
        }else if (state.values[ODROID_INPUT_DOWN])
        {
             frequency = frequency - 10;
-            sprintf(str, "sigDroid-go: %fHz", frequency);
-            writeScreen(str);
+            sprintf(outString, "sigDroid-go: %lfHz", frequency);
+            writeScreen(outString);
        }else if (state.values[ODROID_INPUT_LEFT])
        {
             frequency = frequency - 100;
-            sprintf(str, "sigDroid-go: %fHz", frequency);
-            writeScreen(str);            
+            sprintf(outString, "sigDroid-go: %lfHz", frequency);
+            writeScreen(outString);            
        }else if (state.values[ODROID_INPUT_RIGHT])
        {
             frequency = frequency + 100;
-            sprintf(str, "sigDroid-go: %fHz", frequency);
-            writeScreen(str);                                    
+            sprintf(outString, "sigDroid-go: %lfHz", frequency);
+            writeScreen(outString);                                    
        }else if (!previousState.values[ODROID_INPUT_VOLUME] && state.values[ODROID_INPUT_VOLUME])
        {
           uninitSound();
@@ -235,8 +213,7 @@ void sigdroid_init()
               AudioSink = ODROID_AUDIO_SINK_DAC;
               odroid_audio_init(ODROID_AUDIO_SINK_DAC, AUDIO_SAMPLE_RATE);
           }
-          initSound();
-          
+          initSound();        
        }
 
        previousState = state;
