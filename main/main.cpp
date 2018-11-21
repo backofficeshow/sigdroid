@@ -59,7 +59,7 @@ static ODROID_AUDIO_SINK AudioSink = ODROID_AUDIO_SINK_DAC;
 #define SAMPLERATE I2S_SAMPLE_RATE // Sample rate of our waveforms in Hz
 
 float AMPLITUDE = 1000;
-#define WAV_SIZE      256
+#define WAV_SIZE      1024
 int32_t wavetable[WAV_SIZE]     = {0};
 
 void generateSine(int32_t amplitude, int32_t* buffer, uint16_t length) {
