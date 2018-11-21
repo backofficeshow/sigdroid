@@ -1,4 +1,4 @@
-# sigdroid
+# sigdroid-go
 Odroid-go Signal Generator (Uses the Dr A's DAC hat from www.backofficeshow.com/shop)
 
 A portable fsignal/function generator using the Ordroid go as a UI and the Dr A's DAc hat to output the signal
