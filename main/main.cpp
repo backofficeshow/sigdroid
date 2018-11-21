@@ -60,11 +60,40 @@ static int AudioSink = ODROID_AUDIO_SINK_DAC;
 
 #define AMPLITUDE     1000
 #define WAV_SIZE      256
-int32_t sine[WAV_SIZE]     = {0};
+int32_t wavetable[WAV_SIZE]     = {0};
 
 void generateSine(int32_t amplitude, int32_t* buffer, uint16_t length) {
   for (int i=0; i<length; ++i) {
     buffer[i] = int32_t(float(amplitude)*sin(2.0*M_PI*(1.0/length)*i));
+  }
+}
+
+void generateSawtooth(int32_t amplitude, int32_t* buffer, uint16_t length) {
+  float delta = float(amplitude)/float(length);
+  for (int i=0; i<length; ++i) 
+  {
+    buffer[i] = -(amplitude/2)+delta*i;
+  }
+}
+
+void generateTriangle(int32_t amplitude, int32_t* buffer, uint16_t length) {
+  float delta = float(amplitude)/float(length);
+  for (int i=0; i<length/2; ++i) 
+  {
+    buffer[i] = -(amplitude/2)+delta*i;
+  }
+    for (int i=length/2; i<length; ++i) 
+  {
+    buffer[i] = (amplitude/2)-delta*(i-length/2);
+  }
+}
+
+void generateSquare(int32_t amplitude, int32_t* buffer, uint16_t length) {
+  for (int i=0; i<length/2; ++i) {
+    buffer[i] = -(amplitude/2);
+  }
+  for (int i=length/2; i<length; ++i) {
+    buffer[i] = (amplitude/2);
   }
 }
 
@@ -136,6 +165,7 @@ static void writeScreen(char* ScreenData)
 void sigdroid_init()
 {
     char outString[80];
+    char wavetype=0;
     float frequency = 1000;
     bool playsound = FALSE;
     printf("%s: HEAP:0x%x (%#08x)\n",
@@ -166,7 +196,7 @@ void sigdroid_init()
 
        if (playsound == TRUE)
        {
-          playWave(sine, WAV_SIZE, frequency, 0.01);
+          playWave(wavetable, WAV_SIZE, frequency, 0.01);
        }else{
           vTaskDelay(10 / portTICK_PERIOD_MS);
        }
@@ -174,6 +204,34 @@ void sigdroid_init()
        if (!previousState.values[ODROID_INPUT_MENU] && state.values[ODROID_INPUT_MENU])
        {
             esp_restart();
+       }else if (!previousState.values[ODROID_INPUT_START] && state.values[ODROID_INPUT_START])
+       {
+            wavetype++;
+            if (wavetype > 3)
+            {
+              wavetype = 0;
+            }
+            
+            if (wavetype == 0)
+            {
+              generateSine(AMPLITUDE, wavetable, WAV_SIZE);
+              sprintf(outString, "Sine: %lfHz", frequency);
+            }else if (wavetype == 1)
+            {
+              generateSawtooth(AMPLITUDE, wavetable, WAV_SIZE);
+              sprintf(outString, "Saw: %lfHz", frequency);
+            }
+            else if (wavetype == 2)
+            {
+              generateTriangle(AMPLITUDE, wavetable, WAV_SIZE);
+              sprintf(outString, "Triangle: %lfHz", frequency);
+            }
+            else if (wavetype == 3)
+            {
+              generateSquare(AMPLITUDE, wavetable, WAV_SIZE);
+              sprintf(outString, "Square: %lfHz", frequency);
+            }
+            writeScreen(outString);
        }else if (!previousState.values[ODROID_INPUT_A] && state.values[ODROID_INPUT_A])
        {
             initSound();
@@ -242,7 +300,7 @@ extern "C" void app_main()
     ili9341_init();
     ili9341_clear(0x0000);
 
-    generateSine(AMPLITUDE, sine, WAV_SIZE);
+    generateSine(AMPLITUDE, wavetable, WAV_SIZE);
 
     odroid_audio_init(ODROID_AUDIO_SINK_DAC, AUDIO_SAMPLE_RATE);
     odroid_audio_volume_set(ODROID_VOLUME_LEVEL0);
