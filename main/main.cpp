@@ -53,12 +53,12 @@ uint8_t framebuffer[SIGDROID_WIDTH * SIGDROID_HEIGHT];
 uint16_t pal16[256];
 bool IsPal;
 
-static int AudioSink = ODROID_AUDIO_SINK_DAC;
+static ODROID_AUDIO_SINK AudioSink = ODROID_AUDIO_SINK_DAC;
 
 #define I2S_SAMPLE_RATE   (44100)
 #define SAMPLERATE I2S_SAMPLE_RATE // Sample rate of our waveforms in Hz
 
-#define AMPLITUDE     1000
+float AMPLITUDE = 1000;
 #define WAV_SIZE      256
 int32_t wavetable[WAV_SIZE]     = {0};
 
@@ -119,8 +119,8 @@ void uninitSound()
 {
   short outbuf[2];
   odroid_audio_volume_set(ODROID_VOLUME_LEVEL0);
-  outbuf[0] = 0x00;
-  outbuf[1] = 0x00;
+  outbuf[0] = 0xFF;
+  outbuf[1] = 0xFF;
   odroid_audio_submit(outbuf, 1);
 }
 
@@ -166,6 +166,7 @@ void sigdroid_init()
 {
     char outString[80];
     char wavetype=0;
+    char amplevel=0;
     float frequency = 1000;
     bool playsound = FALSE;
     printf("%s: HEAP:0x%x (%#08x)\n",
@@ -232,6 +233,31 @@ void sigdroid_init()
               sprintf(outString, "Square: %lfHz", frequency);
             }
             writeScreen(outString);
+       }else if (!previousState.values[ODROID_INPUT_SELECT] && state.values[ODROID_INPUT_SELECT])
+       {
+            amplevel++;
+            if (amplevel > 3)
+            {
+              amplevel = 0;
+            }
+            
+            if (amplevel == 0)
+            {
+                AMPLITUDE = 16.0;
+            }else if (amplevel == 1)
+            {
+                AMPLITUDE = 256.0; 
+            }
+            else if (amplevel == 2)
+            {
+                AMPLITUDE = 1024.0;
+            }
+            else if (amplevel == 3)
+            {
+                AMPLITUDE = 65535.0;
+            }
+            sprintf(outString, "Amplitude: %lf units", AMPLITUDE);
+            writeScreen(outString);            
        }else if (!previousState.values[ODROID_INPUT_A] && state.values[ODROID_INPUT_A])
        {
             initSound();
