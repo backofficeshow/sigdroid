@@ -266,11 +266,10 @@ void sigdroid_init()
           odroid_audio_terminate();
           if (AudioSink == ODROID_AUDIO_SINK_DAC){
               AudioSink = ODROID_AUDIO_SINK_SPEAKER;
-              odroid_audio_init(ODROID_AUDIO_SINK_SPEAKER, AUDIO_SAMPLE_RATE);
           }else if (AudioSink == ODROID_AUDIO_SINK_SPEAKER){
               AudioSink = ODROID_AUDIO_SINK_DAC;
-              odroid_audio_init(ODROID_AUDIO_SINK_DAC, AUDIO_SAMPLE_RATE);
           }
+          odroid_audio_init(AudioSink, AUDIO_SAMPLE_RATE);
           initSound();        
        }
 
